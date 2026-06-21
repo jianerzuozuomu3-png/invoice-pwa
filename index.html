@@ -52,6 +52,12 @@
     .file-btn { flex: 1; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px; font-size: 13px; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 6px; }
     .file-btn:active { opacity: 0.7; }
 
+    /* Doc type tabs */
+    .doc-type-tabs { display: flex; gap: 6px; }
+    .doc-tab { flex: 1; padding: 9px 4px; font-size: 12.5px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--bg); color: var(--text-secondary); cursor: pointer; text-align: center; }
+    .doc-tab.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+    .doc-tab:active { opacity: 0.8; }
+
     /* Sections */
     .section { background: var(--surface); border-radius: var(--radius); margin: 12px 16px 0; overflow: hidden; border: 0.5px solid var(--border); }
     .section-title { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; padding: 12px 14px 8px; }
@@ -136,7 +142,7 @@
 <body>
 <div class="app">
   <div class="header">
-    <h1>納品書 兼 請求書</h1>
+    <h1 id="app-title">納品書 兼 請求書</h1>
     <div class="header-actions">
       <button class="icon-btn" onclick="saveFile()">💾 保存</button>
       <button class="icon-btn" onclick="document.getElementById('load-input').click()">📂 開く</button>
@@ -145,12 +151,21 @@
   </div>
 
   <div class="section">
+    <div class="section-title">書類タイプ</div>
+    <div class="doc-type-tabs" style="padding: 0 14px 12px;">
+      <button class="doc-tab" data-type="delivery" onclick="setDocType('delivery')">納品書</button>
+      <button class="doc-tab" data-type="invoice" onclick="setDocType('invoice')">請求書</button>
+      <button class="doc-tab active" data-type="both" onclick="setDocType('both')">納品書兼請求書</button>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">請求情報</div>
     <div class="row2" style="padding: 0 14px;">
-      <div class="field"><label>請求日</label><input type="date" id="inv-date"></div>
-      <div class="field"><label>請求書番号</label><input type="text" id="inv-no" placeholder="2024-001"></div>
+      <div class="field"><label id="label-date">請求日</label><input type="date" id="inv-date"></div>
+      <div class="field"><label id="label-no">請求書番号</label><input type="text" id="inv-no" placeholder="2024-001"></div>
     </div>
-    <div class="field"><label>お支払期限</label><input type="date" id="due-date"></div>
+    <div class="field" id="due-date-field"><label>お支払期限</label><input type="date" id="due-date"></div>
     <div class="field"><label>件名</label><input type="text" id="subject" placeholder="例：システム開発費"></div>
   </div>
 
@@ -185,7 +200,7 @@
     <div class="totals" id="totals-display"></div>
   </div>
 
-  <div class="section">
+  <div class="section" id="bank-section">
     <div class="section-title">振込先</div>
     <div class="row2" style="padding: 0 14px;">
       <div class="field"><label>金融機関名</label><input type="text" id="bank-name" placeholder="○○銀行"></div>
@@ -232,6 +247,26 @@ const UNIT_LIST = ['式','個','台','人','時間','本','枚','冊','回','件
 const TAX_RATES = [0.10, 0.08, 0.00];
 const TAX_LABELS = ['10%', '8%', '0%'];
 let items = [{name:'',qty:1,unit:'式',price:0,tax:0.10}];
+let docType = 'both'; // 'delivery' | 'invoice' | 'both'
+
+const DOC_LABELS = {
+  delivery: { title: '納品書', dateLabel: '納品日', noLabel: '納品書番号', showDue: false, showBank: false, printTitle: '納品書', leadText: '下記の通り納品いたします。' },
+  invoice:  { title: '請求書', dateLabel: '請求日', noLabel: '請求書番号', showDue: true,  showBank: true,  printTitle: '請求書', leadText: '下記の通りご請求申し上げます。' },
+  both:     { title: '納品書 兼 請求書', dateLabel: '請求日', noLabel: '請求書番号', showDue: true, showBank: true, printTitle: '納品書　兼　請求書', leadText: '下記の通りご請求申し上げます。' }
+};
+
+function setDocType(type) {
+  docType = type;
+  document.querySelectorAll('.doc-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  const cfg = DOC_LABELS[type];
+  document.getElementById('app-title').textContent = cfg.title;
+  document.getElementById('label-date').textContent = cfg.dateLabel;
+  document.getElementById('label-no').textContent = cfg.noLabel;
+  document.getElementById('due-date-field').style.display = cfg.showDue ? '' : 'none';
+  document.getElementById('bank-section').style.display = cfg.showBank ? '' : 'none';
+}
 
 function today() { return new Date().toISOString().slice(0,10); }
 document.getElementById('inv-date').value = today();
@@ -336,6 +371,7 @@ function v(id){return document.getElementById(id).value.trim();}
 
 function collectData() {
   return {
+    docType: docType,
     invDate:v('inv-date'), invNo:v('inv-no'), dueDate:v('due-date'), subject:v('subject'),
     toCompany:v('to-company'), toZip:v('to-zip'), toAddr:v('to-addr'), toPerson:v('to-person'),
     fromCompany:v('from-company'), fromRegno:v('from-regno'), fromZip:v('from-zip'), fromAddr:v('from-addr'),
@@ -348,6 +384,7 @@ function collectData() {
 
 function applyData(d) {
   const set = (id,val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  setDocType(d.docType || 'both');
   set('inv-date',d.invDate); set('inv-no',d.invNo); set('due-date',d.dueDate); set('subject',d.subject);
   set('to-company',d.toCompany); set('to-zip',d.toZip); set('to-addr',d.toAddr); set('to-person',d.toPerson);
   set('from-company',d.fromCompany); set('from-regno',d.fromRegno); set('from-zip',d.fromZip); set('from-addr',d.fromAddr);
@@ -386,6 +423,7 @@ function showPreview() {
   const t = calcTotals();
   const fmt = n => n.toLocaleString('ja-JP');
   const fmtDate = s => s ? s.replace(/-/g,'年').replace(/年(\d+)/,'年$1月').replace(/月(\d+)$/,'月$1日') : '　年　月　日';
+  const cfg = DOC_LABELS[docType];
   const maxRows = 18;
   let rows = '';
   for(let i=0;i<maxRows;i++){
@@ -398,8 +436,25 @@ function showPreview() {
       rows+=`<tr class="empty"><td class="c">${i+1}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
     }
   }
+
+  const amountLabel = docType === 'delivery' ? 'お届け金額' : 'ご請求金額';
+  const amountBoxHtml = `<div class="inv-amount-box"><span>${amountLabel}</span><span class="amount">¥${fmt(t.total)}</span></div>`;
+  const dueDateHtml = cfg.showDue ? `<div style="font-size:11px;margin-bottom:4px">お支払期限：${fmtDate(v('due-date'))}</div>` : '';
+
+  const bankBlockHtml = cfg.showBank ? `
+      <div>
+        <div style="font-weight:600;margin-bottom:4px">お振込先</div>
+        <table class="inv-bank">
+          <tr><td>金融機関</td><td>${v('bank-name')}${v('bank-code')?'　('+v('bank-code')+')':''}</td></tr>
+          <tr><td>支　　店</td><td>${v('bank-branch')}${v('bank-branch-code')?'　('+v('bank-branch-code')+')':''}</td></tr>
+          <tr><td>口座種別</td><td>${v('bank-type')}</td></tr>
+          <tr><td>口座番号</td><td>${v('bank-no')}</td></tr>
+          <tr><td>口座名義</td><td>${v('bank-holder')}</td></tr>
+        </table>
+      </div>` : `<div></div>`;
+
   document.getElementById('preview-content').innerHTML = `
-    <h1>納品書　兼　請求書</h1>
+    <h1>${cfg.printTitle}</h1>
     <div class="inv-meta">
       <div>
         <div>件名：${v('subject')}</div>
@@ -409,7 +464,7 @@ function showPreview() {
         <div>${v('to-person')}</div>
       </div>
       <div style="text-align:right">
-        <div>請求日　${fmtDate(v('inv-date'))}</div>
+        <div>${cfg.dateLabel}　${fmtDate(v('inv-date'))}</div>
         <div>番号　${v('inv-no')||'　'}</div>
         <hr class="inv-thin">
         <div style="font-weight:600">${v('from-company')}</div>
@@ -422,9 +477,9 @@ function showPreview() {
       </div>
     </div>
     <hr class="inv-divider">
-    <div>下記の通りご請求申し上げます。</div>
-    <div class="inv-amount-box"><span>ご請求金額</span><span class="amount">¥${fmt(t.total)}</span></div>
-    <div style="font-size:11px;margin-bottom:4px">お支払期限：${fmtDate(v('due-date'))}</div>
+    <div>${cfg.leadText}</div>
+    ${amountBoxHtml}
+    ${dueDateHtml}
     <table class="inv-table">
       <thead><tr><th style="width:22px">NO</th><th style="width:34px">納品日</th><th>商品名／品名</th><th style="width:50px">数量</th><th style="width:54px">単価</th><th style="width:28px">税率</th><th style="width:58px">金額(税抜)</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -437,16 +492,7 @@ function showPreview() {
     <hr class="inv-thin" style="margin-top:6px">
     <div class="inv-footer">
       <div><div style="font-weight:600;margin-bottom:4px">備　考</div><div class="inv-note">${v('memo')}</div></div>
-      <div>
-        <div style="font-weight:600;margin-bottom:4px">お振込先</div>
-        <table class="inv-bank">
-          <tr><td>金融機関</td><td>${v('bank-name')}${v('bank-code')?'　('+v('bank-code')+')':''}</td></tr>
-          <tr><td>支　　店</td><td>${v('bank-branch')}${v('bank-branch-code')?'　('+v('bank-branch-code')+')':''}</td></tr>
-          <tr><td>口座種別</td><td>${v('bank-type')}</td></tr>
-          <tr><td>口座番号</td><td>${v('bank-no')}</td></tr>
-          <tr><td>口座名義</td><td>${v('bank-holder')}</td></tr>
-        </table>
-      </div>
+      ${bankBlockHtml}
     </div>
   `;
   document.getElementById('preview-overlay').classList.add('active');
@@ -501,6 +547,7 @@ if ('serviceWorker' in navigator) {
 }
 
 renderItems();
+setDocType('both');
 </script>
 </body>
 </html>
