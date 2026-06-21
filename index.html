@@ -192,6 +192,10 @@
       <div class="field"><label>支店名</label><input type="text" id="bank-branch" placeholder="○○支店"></div>
     </div>
     <div class="row2" style="padding: 0 14px;">
+      <div class="field"><label>銀行コード</label><input type="text" id="bank-code" placeholder="0000" inputmode="numeric" maxlength="4"></div>
+      <div class="field"><label>支店コード</label><input type="text" id="bank-branch-code" placeholder="000" inputmode="numeric" maxlength="3"></div>
+    </div>
+    <div class="row2" style="padding: 0 14px;">
       <div class="field"><label>口座種別</label>
         <select id="bank-type"><option>普通</option><option>当座</option></select>
       </div>
@@ -336,8 +340,8 @@ function collectData() {
     toCompany:v('to-company'), toZip:v('to-zip'), toAddr:v('to-addr'), toPerson:v('to-person'),
     fromCompany:v('from-company'), fromRegno:v('from-regno'), fromZip:v('from-zip'), fromAddr:v('from-addr'),
     fromTel:v('from-tel'), fromFax:v('from-fax'), fromMail:v('from-mail'),
-    bankName:v('bank-name'), bankBranch:v('bank-branch'), bankType:v('bank-type'),
-    bankNo:v('bank-no'), bankHolder:v('bank-holder'), memo:v('memo'),
+    bankName:v('bank-name'), bankBranch:v('bank-branch'), bankCode:v('bank-code'), bankBranchCode:v('bank-branch-code'),
+    bankType:v('bank-type'), bankNo:v('bank-no'), bankHolder:v('bank-holder'), memo:v('memo'),
     items: items.map(i=>({...i}))
   };
 }
@@ -348,8 +352,8 @@ function applyData(d) {
   set('to-company',d.toCompany); set('to-zip',d.toZip); set('to-addr',d.toAddr); set('to-person',d.toPerson);
   set('from-company',d.fromCompany); set('from-regno',d.fromRegno); set('from-zip',d.fromZip); set('from-addr',d.fromAddr);
   set('from-tel',d.fromTel); set('from-fax',d.fromFax); set('from-mail',d.fromMail);
-  set('bank-name',d.bankName); set('bank-branch',d.bankBranch); set('bank-type',d.bankType);
-  set('bank-no',d.bankNo); set('bank-holder',d.bankHolder); set('memo',d.memo);
+  set('bank-name',d.bankName); set('bank-branch',d.bankBranch); set('bank-code',d.bankCode); set('bank-branch-code',d.bankBranchCode);
+  set('bank-type',d.bankType); set('bank-no',d.bankNo); set('bank-holder',d.bankHolder); set('memo',d.memo);
   items = (d.items && d.items.length) ? d.items : [{name:'',qty:1,unit:'式',price:0,tax:0.10}];
   renderItems();
 }
@@ -436,8 +440,8 @@ function showPreview() {
       <div>
         <div style="font-weight:600;margin-bottom:4px">お振込先</div>
         <table class="inv-bank">
-          <tr><td>金融機関</td><td>${v('bank-name')}</td></tr>
-          <tr><td>支　　店</td><td>${v('bank-branch')}</td></tr>
+          <tr><td>金融機関</td><td>${v('bank-name')}${v('bank-code')?'　('+v('bank-code')+')':''}</td></tr>
+          <tr><td>支　　店</td><td>${v('bank-branch')}${v('bank-branch-code')?'　('+v('bank-branch-code')+')':''}</td></tr>
           <tr><td>口座種別</td><td>${v('bank-type')}</td></tr>
           <tr><td>口座番号</td><td>${v('bank-no')}</td></tr>
           <tr><td>口座名義</td><td>${v('bank-holder')}</td></tr>
