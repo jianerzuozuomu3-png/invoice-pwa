@@ -422,7 +422,11 @@ function loadFile(e) {
 function showPreview() {
   const t = calcTotals();
   const fmt = n => n.toLocaleString('ja-JP');
-  const fmtDate = s => s ? s.replace(/-/g,'年').replace(/年(\d+)/,'年$1月').replace(/月(\d+)$/,'月$1日') : '　年　月　日';
+  const fmtDate = s => {
+    if (!s) return '　年　月　日';
+    const [y, m, d] = s.split('-');
+    return `${y}年${m}月${d}日`;
+  };
   const cfg = DOC_LABELS[docType];
   const maxRows = 18;
   let rows = '';
