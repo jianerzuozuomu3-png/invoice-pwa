@@ -75,16 +75,24 @@
     .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 
     /* Items */
-    .item-header { display: grid; grid-template-columns: minmax(0,2.2fr) 42px 42px 68px 50px 28px; gap: 4px; padding: 0 14px 4px; }
+    .item-header { display: none; } /* カード型なのでヘッダー不要 */
     .item-header span { font-size: 10px; color: var(--text-tertiary); text-align: right; }
     .item-header span:first-child { text-align: left; }
+    .item-card { border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin: 0 14px 8px; overflow: hidden; }
+    .item-card-row1 { display: grid; grid-template-columns: 1fr auto; gap: 4px; padding: 7px 8px 4px; background: var(--bg); }
+    .item-card-row2 { display: grid; grid-template-columns: 38px 38px 1fr 48px auto; gap: 4px; padding: 4px 8px 7px; align-items: center; }
+    .item-card-label { font-size: 10px; color: var(--text-tertiary); margin-bottom: 2px; }
+    .item-field { display: flex; flex-direction: column; }
     .item-row { display: grid; grid-template-columns: minmax(0,2.2fr) 42px 42px 68px 50px 28px; gap: 4px; align-items: center; padding: 0 14px 8px; }
-    .item-row input, .item-row select {
+    .item-row input, .item-row select, .item-card input, .item-card select {
       font-size: 13px; padding: 6px 5px; min-width: 0; width: 100%;
       border: 0.5px solid var(--border); border-radius: var(--radius-sm);
-      background: var(--bg); color: var(--text);
+      background: var(--surface); color: var(--text);
       -webkit-appearance: none; appearance: none; text-align: right;
     }
+    .item-card input[type=text] { text-align: left; }
+    .item-card input[type=date] { text-align: left; font-size: 12px; padding: 5px 4px; }
+    .item-card input:focus, .item-card select:focus { outline: none; border-color: var(--text); }
     .item-row input:first-child { text-align: left; }
     .item-row input:focus, .item-row select:focus { outline: none; border-color: var(--text); }
     .unit-wrap { position: relative; }
@@ -246,7 +254,7 @@
 const UNIT_LIST = ['式','個','台','人','時間','本','枚','冊','回','件','セット','kg','g','m','cm','L','ml','月','日','年'];
 const TAX_RATES = [0.10, 0.08, 0.00];
 const TAX_LABELS = ['10%', '8%', '0%'];
-let items = [{name:'',qty:1,unit:'式',price:0,tax:0.10}];
+let items = [{name:'',qty:1,unit:'式',price:0,tax:0.10,deliveryDate:''}];
 let docType = 'both'; // 'delivery' | 'invoice' | 'both'
 
 const DOC_LABELS = {
@@ -308,7 +316,7 @@ document.addEventListener('click', e => {
 });
 
 function addItem() {
-  items.push({name:'',qty:1,unit:'式',price:0,tax:0.10});
+  items.push({name:'',qty:1,unit:'式',price:0,tax:0.10,deliveryDate:''});
   renderItems();
   // スクロールして新しい行を表示
   setTimeout(() => {
@@ -318,7 +326,7 @@ function addItem() {
 }
 
 function removeItem(i) {
-  if (items.length === 1) { items[0]={name:'',qty:1,unit:'式',price:0,tax:0.10}; renderItems(); return; }
+  if (items.length === 1) { items[0]={name:'',qty:1,unit:'式',price:0,tax:0.10,deliveryDate:''}; renderItems(); return; }
   items.splice(i,1);
   renderItems();
 }
@@ -327,23 +335,46 @@ function renderItems() {
   const c = document.getElementById('items-container');
   c.innerHTML = '';
   items.forEach((item, i) => {
-    const row = document.createElement('div');
-    row.className = 'item-row';
-    row.innerHTML = `
-      <input type="text" placeholder="品名" value="${(item.name||'').replace(/"/g,'&quot;')}" oninput="items[${i}].name=this.value">
-      <input type="number" min="0" step="any" inputmode="decimal" placeholder="1" value="${item.qty||''}" oninput="items[${i}].qty=parseFloat(this.value)||0;calcTotals()">
-      <div class="unit-wrap">
-        <input class="unit-input" type="text" placeholder="式" value="${(item.unit||'').replace(/"/g,'&quot;')}"
-          oninput="items[${i}].unit=this.value;openUnitSuggestions(this,${i})"
-          onfocus="openUnitSuggestions(this,${i})">
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <div class="item-card-row1">
+        <div class="item-field">
+          <div class="item-card-label">商品名／品名</div>
+          <input type="text" placeholder="品名" value="${(item.name||'').replace(/"/g,'&quot;')}" oninput="items[${i}].name=this.value">
+        </div>
+        <div class="item-field" style="min-width:110px; margin-left:6px;">
+          <div class="item-card-label">納品日</div>
+          <input type="date" value="${item.deliveryDate||''}" oninput="items[${i}].deliveryDate=this.value">
+        </div>
       </div>
-      <input type="number" min="0" inputmode="decimal" placeholder="0" value="${item.price||''}" oninput="items[${i}].price=parseFloat(this.value)||0;calcTotals()">
-      <select onchange="items[${i}].tax=parseFloat(this.value);calcTotals()">
-        ${TAX_RATES.map((r,j)=>`<option value="${r}" ${item.tax===r?'selected':''}>${TAX_LABELS[j]}</option>`).join('')}
-      </select>
-      <button class="del-btn" onclick="removeItem(${i})" aria-label="削除">×</button>
+      <div class="item-card-row2">
+        <div class="item-field">
+          <div class="item-card-label">数量</div>
+          <input type="number" min="0" step="any" inputmode="decimal" placeholder="1" value="${item.qty||''}" oninput="items[${i}].qty=parseFloat(this.value)||0;calcTotals()">
+        </div>
+        <div class="item-field">
+          <div class="item-card-label">単位</div>
+          <div class="unit-wrap">
+            <input class="unit-input" type="text" placeholder="式" value="${(item.unit||'').replace(/"/g,'&quot;')}"
+              oninput="items[${i}].unit=this.value;openUnitSuggestions(this,${i})"
+              onfocus="openUnitSuggestions(this,${i})">
+          </div>
+        </div>
+        <div class="item-field">
+          <div class="item-card-label">単価</div>
+          <input type="number" min="0" inputmode="decimal" placeholder="0" value="${item.price||''}" oninput="items[${i}].price=parseFloat(this.value)||0;calcTotals()">
+        </div>
+        <div class="item-field">
+          <div class="item-card-label">税率</div>
+          <select onchange="items[${i}].tax=parseFloat(this.value);calcTotals()">
+            ${TAX_RATES.map((r,j)=>`<option value="${r}" ${item.tax===r?'selected':''}>${TAX_LABELS[j]}</option>`).join('')}
+          </select>
+        </div>
+        <button class="del-btn" onclick="removeItem(${i})" aria-label="削除" style="margin-top:14px">×</button>
+      </div>
     `;
-    c.appendChild(row);
+    c.appendChild(card);
   });
   calcTotals();
 }
@@ -434,8 +465,12 @@ function showPreview() {
     const item = items[i];
     if(item && (item.name||item.price)){
       const amt=(item.qty||0)*(item.price||0);
-      const d=v('inv-date')?new Date(v('inv-date')):null;
-      rows+=`<tr><td class="c">${i+1}</td><td class="c">${d?`${d.getMonth()+1}/${d.getDate()}`:'　'}</td><td>${item.name}</td><td class="r">${item.qty}　${item.unit||''}</td><td class="r">${fmt(item.price)}</td><td class="c">${item.tax===0?'0%':item.tax===0.08?'8%':'10%'}</td><td class="r">${fmt(amt)}</td></tr>`;
+      let dateStr = '　';
+      if(item.deliveryDate) {
+        const [,m,d] = item.deliveryDate.split('-');
+        dateStr = `${parseInt(m)}/${parseInt(d)}`;
+      }
+      rows+=`<tr><td class="c">${i+1}</td><td class="c">${dateStr}</td><td>${item.name}</td><td class="r">${item.qty}　${item.unit||''}</td><td class="r">${fmt(item.price)}</td><td class="c">${item.tax===0?'0%':item.tax===0.08?'8%':'10%'}</td><td class="r">${fmt(amt)}</td></tr>`;
     } else {
       rows+=`<tr class="empty"><td class="c">${i+1}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
     }
@@ -541,7 +576,7 @@ function clearForm(){
     el.value = el.id==='inv-date' ? today() : '';
   });
   document.getElementById('bank-type').value = '普通';
-  items = [{name:'',qty:1,unit:'式',price:0,tax:0.10}];
+  items = [{name:'',qty:1,unit:'式',price:0,tax:0.10,deliveryDate:''}];
   renderItems();
 }
 
