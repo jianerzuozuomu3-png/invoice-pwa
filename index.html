@@ -58,6 +58,13 @@
     .doc-tab.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
     .doc-tab:active { opacity: 0.8; }
 
+    /* My info save button */
+    .save-myinfo-btn { font-size: 11px; padding: 4px 8px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--bg); color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+    .save-myinfo-btn:active { background: var(--text); color: var(--bg); }
+
+    /* Autosave indicator */
+    .autosave-bar { text-align: center; font-size: 11px; color: var(--text-tertiary); padding: 6px 16px 0; }
+
     /* Sections */
     .section { background: var(--surface); border-radius: var(--radius); margin: 12px 16px 0; overflow: hidden; border: 0.5px solid var(--border); }
     .section-title { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; padding: 12px 14px 8px; }
@@ -158,6 +165,8 @@
     </div>
   </div>
 
+  <div class="autosave-bar" id="autosave-bar">　</div>
+
   <div class="section">
     <div class="section-title">書類タイプ</div>
     <div class="doc-type-tabs" style="padding: 0 14px 12px;">
@@ -186,7 +195,10 @@
   </div>
 
   <div class="section">
-    <div class="section-title">請求元（自社）</div>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>請求元（自社）</span>
+      <button class="save-myinfo-btn" onclick="saveMyInfo()">💾 自社情報を保存</button>
+    </div>
     <div class="field"><label>会社名</label><input type="text" id="from-company" placeholder="株式会社○○"></div>
     <div class="field"><label>インボイス登録番号</label><input type="text" id="from-regno" placeholder="T1234567890123"></div>
     <div class="field"><label>郵便番号</label><input type="text" id="from-zip" placeholder="000-0000"></div>
@@ -398,6 +410,69 @@ function calcTotals() {
   return {sub, tax10, tax10base, tax8, tax8base, total};
 }
 
+// ── 自社情報 ──────────────────────────────
+const MY_INFO_KEY = 'invoice_myinfo';
+const MY_INFO_FIELDS = ['from-company','from-regno','from-zip','from-addr','from-tel','from-fax','from-mail',
+  'bank-name','bank-branch','bank-code','bank-branch-code','bank-type','bank-no','bank-holder'];
+
+function saveMyInfo() {
+  const info = {};
+  MY_INFO_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) info[id] = el.value;
+  });
+  localStorage.setItem(MY_INFO_KEY, JSON.stringify(info));
+  showToast('自社情報を保存しました');
+}
+
+function loadMyInfo() {
+  try {
+    const raw = localStorage.getItem(MY_INFO_KEY);
+    if (!raw) return false;
+    const info = JSON.parse(raw);
+    MY_INFO_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && info[id] != null) el.value = info[id];
+    });
+    return true;
+  } catch { return false; }
+}
+
+// ── オートセーブ ──────────────────────────
+const AUTOSAVE_KEY = 'invoice_autosave';
+let autosaveTimer = null;
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(doAutosave, 1000);
+}
+
+function doAutosave() {
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(collectData()));
+    const now = new Date();
+    const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    document.getElementById('autosave-bar').textContent = `🔄 ${hm} に自動保存しました`;
+  } catch(e) {
+    document.getElementById('autosave-bar').textContent = '⚠️ 自動保存できませんでした（容量不足の可能性）';
+  }
+}
+
+function loadAutosave() {
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    applyData(data);
+    document.getElementById('autosave-bar').textContent = '✅ 前回の入力を復元しました';
+    return true;
+  } catch { return false; }
+}
+
+// oninput でオートセーブをトリガー
+document.addEventListener('input', scheduleAutosave);
+document.addEventListener('change', scheduleAutosave);
+
 function v(id){return document.getElementById(id).value.trim();}
 
 function collectData() {
@@ -578,6 +653,9 @@ function clearForm(){
   document.getElementById('bank-type').value = '普通';
   items = [{name:'',qty:1,unit:'式',price:0,tax:0.10,deliveryDate:''}];
   renderItems();
+  localStorage.removeItem(AUTOSAVE_KEY);
+  document.getElementById('autosave-bar').textContent = '　';
+  loadMyInfo(); // リセット後も自社情報は復元
 }
 
 // Service Worker 登録
@@ -585,8 +663,12 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 
+// 起動時：オートセーブ復元 → なければ自社情報だけ読み込む
 renderItems();
 setDocType('both');
+if (!loadAutosave()) {
+  loadMyInfo();
+}
 </script>
 </body>
 </html>
