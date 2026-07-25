@@ -132,9 +132,12 @@
     .preview-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; overflow-y: auto; }
     .preview-overlay.active { display: block; }
     .preview-sheet { background: white; width: 100%; max-width: 480px; margin: 0 auto; min-height: 100vh; color: #333; }
-    .preview-actions { position: sticky; top: 0; background: #f5f5f5; border-bottom: 1px solid #ddd; padding: 10px 16px; display: flex; gap: 8px; z-index: 10; padding-top: max(10px, env(safe-area-inset-top)); }
-    .preview-actions button { flex: 1; padding: 11px; border-radius: 6px; font-size: 14px; cursor: pointer; border: 1px solid #ccc; background: white; }
-    .preview-actions .pdf-btn { background: #1a1a1a; color: white; border-color: #1a1a1a; font-weight: 600; }
+    .preview-actions { position: sticky; top: 0; background: #f5f5f5; border-bottom: 1px solid #ddd; padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; z-index: 10; padding-top: max(10px, env(safe-area-inset-top)); }
+    .preview-actions-row { display: flex; gap: 8px; }
+    .preview-actions button { flex: 1; padding: 11px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid #ccc; background: white; color: #333; }
+    .preview-actions .pdf-btn-print { background: #1a1a1a; color: white; border-color: #1a1a1a; font-weight: 600; }
+    .preview-actions .pdf-btn-jspdf { background: #1a5276; color: white; border-color: #1a5276; font-weight: 600; }
+    .preview-actions .pdf-hint { font-size: 10px; color: #888; text-align: center; padding: 0; border: none; background: none; line-height: 1.4; cursor: default; }
     .inv { padding: 20px 24px; font-size: 12px; line-height: 1.5; }
     .inv h1 { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 12px; letter-spacing: 0.05em; }
     .inv-meta { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 11px; }
@@ -253,8 +256,16 @@
 <div class="preview-overlay" id="preview-overlay">
   <div class="preview-sheet">
     <div class="preview-actions">
-      <button onclick="closePreview()">← 戻る</button>
-      <button class="pdf-btn" onclick="printPDF()">↓ PDFで保存</button>
+      <div class="preview-actions-row">
+        <button onclick="closePreview()">← 戻る</button>
+        <button class="pdf-btn-print" onclick="printPDF()">🖨 印刷／PDF保存</button>
+        <button class="pdf-btn-jspdf" onclick="saveJsPDF()">⬇ PDFを直接保存</button>
+      </div>
+      <div style="display:flex;gap:8px;font-size:10px;color:#888;text-align:center;">
+        <span style="flex:1"></span>
+        <span style="flex:1">ブラウザの印刷画面経由</span>
+        <span style="flex:1">ファイルとして直接保存</span>
+      </div>
     </div>
     <div class="inv" id="preview-content"></div>
   </div>
@@ -643,6 +654,132 @@ function printPDF(){
   </style></head><body>${content}</body></html>`);
   w.document.close();
   setTimeout(()=>{ w.focus(); w.print(); }, 300);
+}
+
+async function saveJsPDF() {
+  // ライブラリ読み込み（初回のみ）
+  if (!window.html2canvas) {
+    showToast('ライブラリを読み込み中...');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  }
+  if (!window.jspdf) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }
+
+  showToast('PDF生成中...');
+
+  try {
+    // A4幅(794px)のiframeを作成し、その中でPCレイアウトとして描画する
+    const A4_W = 794;
+    const content = document.getElementById('preview-content').innerHTML;
+    const printCSS = `
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Hiragino Kaku Gothic Pro','Meiryo','Yu Gothic',sans-serif;
+           font-size:12px;color:#333;background:white;
+           width:${A4_W}px;padding:20px 28px;}
+      h1{font-size:18px;font-weight:700;text-align:center;margin-bottom:12px;letter-spacing:0.05em}
+      .inv-meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:11px}
+      .inv-meta div{line-height:1.8}
+      hr.inv-divider{border:none;border-top:1.5px solid #333;margin:8px 0}
+      hr.inv-thin{border:none;border-top:0.5px solid #aaa;margin:6px 0}
+      .inv-amount-box{border:1.5px solid #333;padding:6px 12px;margin:10px 0;
+                      display:flex;justify-content:space-between;align-items:center}
+      .inv-amount-box .amount{font-size:18px;font-weight:700}
+      .inv-table{width:100%;border-collapse:collapse;font-size:10.5px;margin:10px 0}
+      .inv-table th{background:#eee;border:0.5px solid #bbb;padding:4px 5px;
+                    text-align:center;font-weight:600}
+      .inv-table td{border:0.5px solid #bbb;padding:4px 5px}
+      .inv-table td.r{text-align:right}
+      .inv-table td.c{text-align:center}
+      .inv-table tr.empty td{color:#ccc}
+      .inv-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;
+                  margin-top:12px;font-size:11px}
+      .inv-bank td{padding:1px 8px 1px 0}
+      .inv-note{min-height:50px;border:0.5px solid #bbb;padding:6px;
+                font-size:11px;white-space:pre-wrap}
+    `;
+
+    // iframe生成（画面外に配置）
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${A4_W}px;height:1px;border:none;visibility:hidden;`;
+    document.body.appendChild(iframe);
+
+    await new Promise(resolve => {
+      iframe.onload = resolve;
+      iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8">
+        <style>${printCSS}</style></head><body>${content}</body></html>`;
+    });
+
+    // iframeの実際の高さに合わせる
+    const iDoc = iframe.contentDocument;
+    const iBody = iDoc.body;
+    const fullH = iBody.scrollHeight;
+    iframe.style.height = fullH + 'px';
+
+    // 少し待ってフォント等を確実に描画
+    await new Promise(r => setTimeout(r, 200));
+
+    const canvas = await html2canvas(iBody, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: A4_W,
+      height: fullH,
+      windowWidth: A4_W,
+      windowHeight: fullH,
+      scrollX: 0,
+      scrollY: 0,
+    });
+
+    document.body.removeChild(iframe);
+
+    // A4 PDF に貼り付け（複数ページ対応）
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = 210, pageH = 297, margin = 10;
+    const contentW = pageW - margin * 2;
+    const contentH = (canvas.height / canvas.width) * contentW;
+    const printableH = pageH - margin * 2;
+
+    let srcY = 0, remainH = contentH, pageNum = 0;
+    while (remainH > 0) {
+      if (pageNum > 0) pdf.addPage();
+      const sliceH = Math.min(remainH, printableH);
+      const srcSliceH = Math.round((sliceH / contentH) * canvas.height);
+
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = srcSliceH;
+      sliceCanvas.getContext('2d').drawImage(
+        canvas, 0, srcY, canvas.width, srcSliceH, 0, 0, canvas.width, srcSliceH
+      );
+      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, sliceH);
+
+      srcY += srcSliceH;
+      remainH -= sliceH;
+      pageNum++;
+    }
+
+    // ファイル名
+    const data = collectData();
+    const invNo = data.invNo ? data.invNo.replace(/[\/\\:*?"<>|]/g,'_') : '';
+    const cfg = DOC_LABELS[docType];
+    const filename = `${cfg.printTitle.replace(/[\s　]/g,'')}_${data.invDate||today()}${invNo?'_'+invNo:''}.pdf`;
+    pdf.save(filename);
+    showToast(`「${filename}」を保存しました`);
+
+  } catch(e) {
+    console.error(e);
+    showToast('PDF生成に失敗しました');
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
 }
 
 function clearForm(){
