@@ -795,9 +795,28 @@ function clearForm(){
   loadMyInfo(); // リセット後も自社情報は復元
 }
 
-// Service Worker 登録
+// Service Worker 登録・自動更新
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // 定期的に更新チェック（1分ごと）
+    setInterval(() => reg.update(), 60 * 1000);
+
+    // 新しいSWが待機状態になったら即座に有効化
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // 新バージョン発見 → 自動でリロード
+          newWorker.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+  }).catch(()=>{});
+
+  // SWが切り替わったらページをリロード
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
 }
 
 // 起動時：オートセーブ復元 → なければ自社情報だけ読み込む
