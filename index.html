@@ -138,6 +138,24 @@
     .preview-actions .pdf-btn-print { background: #1a1a1a; color: white; border-color: #1a1a1a; font-weight: 600; }
     .preview-actions .pdf-btn-jspdf { background: #1a5276; color: white; border-color: #1a5276; font-weight: 600; }
     .preview-actions .pdf-hint { font-size: 10px; color: #888; text-align: center; padding: 0; border: none; background: none; line-height: 1.4; cursor: default; }
+
+    /* Print help modal */
+    .help-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 300; align-items: flex-end; justify-content: center; }
+    .help-overlay.active { display: flex; }
+    .help-sheet { background: var(--surface, #fff); width: 100%; max-width: 480px; border-radius: 16px 16px 0 0; padding: 20px 20px max(20px, env(safe-area-inset-bottom)); color: var(--text, #1a1a1a); max-height: 85vh; overflow-y: auto; }
+    .help-sheet h2 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .help-sheet .help-sub { font-size: 12px; color: #888; margin-bottom: 16px; }
+    .help-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+    .help-tab { flex: 1; padding: 8px 4px; font-size: 12px; border-radius: 6px; border: 0.5px solid #ccc; background: #f5f5f5; color: #555; cursor: pointer; text-align: center; }
+    .help-tab.active { background: #1a1a1a; color: white; border-color: #1a1a1a; font-weight: 600; }
+    .help-panel { display: none; }
+    .help-panel.active { display: block; }
+    .help-step { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+    .help-step-num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #1a1a1a; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .help-step-body { font-size: 13px; line-height: 1.6; }
+    .help-step-body strong { display: block; font-weight: 600; }
+    .help-note { font-size: 11px; color: #888; background: #f5f5f5; border-radius: 6px; padding: 8px 10px; margin-top: 4px; line-height: 1.6; }
+    .help-close-btn { width: 100%; margin-top: 16px; padding: 13px; border-radius: 8px; border: 0.5px solid #ccc; background: #f5f5f5; font-size: 14px; cursor: pointer; color: #333; }
     .inv { padding: 20px 24px; font-size: 12px; line-height: 1.5; }
     .inv h1 { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 12px; letter-spacing: 0.05em; }
     .inv-meta { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 11px; }
@@ -258,16 +276,79 @@
     <div class="preview-actions">
       <div class="preview-actions-row">
         <button onclick="closePreview()">← 戻る</button>
-        <button class="pdf-btn-print" onclick="printPDF()">🖨 印刷／PDF保存</button>
+        <button class="pdf-btn-print" onclick="showPrintHelp()">🖨 印刷／PDF保存</button>
         <button class="pdf-btn-jspdf" onclick="saveJsPDF()">⬇ PDFを直接保存</button>
       </div>
       <div style="display:flex;gap:8px;font-size:10px;color:#888;text-align:center;">
         <span style="flex:1"></span>
-        <span style="flex:1">ブラウザの印刷画面経由</span>
+        <span style="flex:1">やり方を確認してから印刷</span>
         <span style="flex:1">ファイルとして直接保存</span>
       </div>
     </div>
     <div class="inv" id="preview-content"></div>
+  </div>
+</div>
+
+<div class="help-overlay" id="help-overlay" onclick="closeHelpIfBg(event)">
+  <div class="help-sheet">
+    <h2>🖨 印刷メニューからPDFで保存する方法</h2>
+    <p class="help-sub">お使いの端末に合わせて手順を確認してください</p>
+    <div class="help-tabs">
+      <button class="help-tab active" onclick="switchHelpTab('iphone', this)">iPhone</button>
+      <button class="help-tab" onclick="switchHelpTab('android', this)">Android</button>
+      <button class="help-tab" onclick="switchHelpTab('pc', this)">PC</button>
+    </div>
+
+    <div class="help-panel active" id="help-iphone">
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-body"><strong>「印刷を開始する」をタップ</strong>下の「印刷を開始する」ボタンを押すと、印刷プレビュー画面が開きます。</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-body"><strong>プレビューを2本指でピンチアウト</strong>印刷プレビューのサムネイルを2本指で広げると、PDF共有画面に切り替わります。</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-body"><strong>「ファイルに保存」を選択</strong>共有メニューから「ファイルに保存」をタップすると、iPhoneのファイルアプリにPDFが保存されます。</div>
+      </div>
+      <div class="help-note">💡 「ファイルに保存」が見当たらない場合は、共有メニューを左にスワイプするか、「その他」をタップしてください。</div>
+    </div>
+
+    <div class="help-panel" id="help-android">
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-body"><strong>「印刷を開始する」をタップ</strong>下のボタンを押すと、Chromeの印刷画面が開きます。</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-body"><strong>プリンターを「PDFに保存」に変更</strong>プリンター選択欄をタップして「PDFに保存」を選びます。</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-body"><strong>PDFボタンをタップして保存</strong>右上または下部の「PDF」ボタン（またはダウンロードアイコン）をタップすると保存されます。</div>
+      </div>
+      <div class="help-note">💡 端末やChrome のバージョンによって画面が異なる場合があります。「名前を付けて保存」などの表示になることもあります。</div>
+    </div>
+
+    <div class="help-panel" id="help-pc">
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-body"><strong>「印刷を開始する」をクリック</strong>ブラウザの印刷ダイアログが開きます。</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-body"><strong>送信先（プリンター）を変更</strong>「送信先」または「プリンター」のプルダウンから「PDFに保存」を選択します。</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-body"><strong>「保存」をクリック</strong>保存先を選んで「保存」をクリックすれば完了です。</div>
+      </div>
+      <div class="help-note">💡 Chrome・Edge・Safari・Firefoxのいずれも同様の手順です。Windowsでは「Microsoft Print to PDF」でも保存できます。</div>
+    </div>
+
+    <button class="help-close-btn" onclick="closePrintHelp(); printPDF();">印刷を開始する →</button>
+    <button class="help-close-btn" style="margin-top:8px;color:#888;" onclick="closePrintHelp()">閉じる</button>
   </div>
 </div>
 
@@ -485,6 +566,31 @@ document.addEventListener('input', scheduleAutosave);
 document.addEventListener('change', scheduleAutosave);
 
 function v(id){return document.getElementById(id).value.trim();}
+
+function showPrintHelp() {
+  const ua = navigator.userAgent;
+  const tab = /iphone|ipad|ipod/i.test(ua) ? 'iphone' : /android/i.test(ua) ? 'android' : 'pc';
+  switchHelpTab(tab, document.querySelector('.help-tab[onclick*="' + tab + '"]'));
+  document.getElementById('help-overlay').classList.add('active');
+}
+
+function closePrintHelp() {
+  document.getElementById('help-overlay').classList.remove('active');
+}
+
+function closeHelpIfBg(e) {
+  if (e.target === document.getElementById('help-overlay')) closePrintHelp();
+}
+
+function switchHelpTab(name, btn) {
+  document.querySelectorAll('.help-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.help-panel').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const panel = document.getElementById('help-' + name);
+  if (panel) panel.classList.add('active');
+}
+
+
 
 function collectData() {
   return {
