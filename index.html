@@ -651,7 +651,11 @@ function showPreview() {
     return `${y}年${m}月${d}日`;
   };
   const cfg = DOC_LABELS[docType];
-  const maxRows = 18;
+
+  // 入力のある行数を数え、表示行数を「入力行数＋3」(最低4行・最大18行)に設定
+  const filledCount = items.filter(item => item.name || item.price).length;
+  const maxRows = Math.min(18, Math.max(4, filledCount + 3));
+
   let rows = '';
   for(let i=0;i<maxRows;i++){
     const item = items[i];
