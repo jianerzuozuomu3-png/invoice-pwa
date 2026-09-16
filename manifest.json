@@ -1,7 +1,7 @@
 {
   "name": "納品書・請求書アプリ",
   "short_name": "請求書",
-  "description": "納品書兼請求書を簡単に作成・PDF出力できるアプリ",
+  "description": "見積書・納品書・請求書・領収書を簡単に作成・PDF出力できるアプリ",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f5f5f5",

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>納品書・請求書</title>
-  <meta name="description" content="納品書兼請求書を簡単に作成・PDF出力できるアプリ">
+  <title>見積書・納品書・請求書</title>
+  <meta name="description" content="見積書・納品書・請求書を簡単に作成・PDF出力できるアプリ">
   <meta name="theme-color" content="#1a1a1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -43,8 +43,8 @@
     /* Header */
     .header { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; }
     .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
-    .header-actions { display: flex; gap: 8px; }
-    .icon-btn { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 13px; cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 5px; }
+    .header-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .icon-btn { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12px; cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
     .icon-btn:active { opacity: 0.7; }
 
     /* File bar */
@@ -53,7 +53,11 @@
     .file-btn:active { opacity: 0.7; }
 
     /* Doc type tabs */
-    .doc-type-tabs { display: flex; gap: 6px; }
+    .doc-type-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .mini-tab-row { display: flex; gap: 6px; padding: 0 14px 10px; }
+    .mini-tab { flex: 1; padding: 8px 4px; font-size: 12.5px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-secondary); cursor: pointer; }
+    .mini-tab.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .hanko-preview-box { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .doc-tab { flex: 1; padding: 9px 4px; font-size: 12.5px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--bg); color: var(--text-secondary); cursor: pointer; text-align: center; }
     .doc-tab.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
     .doc-tab:active { opacity: 0.8; }
@@ -112,6 +116,8 @@
     .del-btn:active { color: #e24b4a; }
     .add-item-btn { width: calc(100% - 28px); margin: 0 14px 12px; background: var(--bg); border: 0.5px dashed var(--border); border-radius: var(--radius-sm); padding: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
     .add-item-btn:active { border-style: solid; }
+    .convert-btn { width: calc(100% - 28px); margin: 0 14px 12px; background: var(--text); border: none; border-radius: var(--radius-sm); padding: 10px; font-size: 13px; font-weight: 600; color: var(--bg); cursor: pointer; }
+    .convert-btn:active { opacity: 0.8; }
 
     /* Totals */
     .totals { padding: 8px 14px 12px; border-top: 0.5px solid var(--border-light); }
@@ -156,6 +162,13 @@
     .help-step-body strong { display: block; font-weight: 600; }
     .help-note { font-size: 11px; color: #888; background: #f5f5f5; border-radius: 6px; padding: 8px 10px; margin-top: 4px; line-height: 1.6; }
     .help-close-btn { width: 100%; margin-top: 16px; padding: 13px; border-radius: 8px; border: 0.5px solid #ccc; background: #f5f5f5; font-size: 14px; cursor: pointer; color: #333; }
+    .doclist-item { display: flex; align-items: center; gap: 8px; padding: 10px 4px; border-bottom: 0.5px solid #eee; cursor: pointer; }
+    .doclist-item:active { background: #f7f7f7; }
+    .doclist-main { flex: 1; min-width: 0; }
+    .doclist-title { font-size: 13px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doclist-sub { font-size: 11px; color: #888; margin-top: 2px; }
+    .doclist-del { flex-shrink: 0; background: none; border: none; font-size: 16px; padding: 6px; cursor: pointer; }
+    .doclist-del:active { opacity: 0.6; }
     .inv { padding: 20px 24px; font-size: 12px; line-height: 1.5; }
     .inv h1 { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 12px; letter-spacing: 0.05em; }
     .inv-meta { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 11px; }
@@ -180,6 +193,7 @@
   <div class="header">
     <h1 id="app-title">納品書 兼 請求書</h1>
     <div class="header-actions">
+      <button class="icon-btn" onclick="openDocList()">📁 一覧</button>
       <button class="icon-btn" onclick="saveFile()">💾 保存</button>
       <button class="icon-btn" onclick="document.getElementById('load-input').click()">📂 開く</button>
       <input type="file" id="load-input" accept=".json" style="display:none" onchange="loadFile(event)">
@@ -191,24 +205,40 @@
   <div class="section">
     <div class="section-title">書類タイプ</div>
     <div class="doc-type-tabs" style="padding: 0 14px 12px;">
+      <button class="doc-tab" data-type="quotation" onclick="setDocType('quotation')">見積書</button>
       <button class="doc-tab" data-type="delivery" onclick="setDocType('delivery')">納品書</button>
       <button class="doc-tab" data-type="invoice" onclick="setDocType('invoice')">請求書</button>
+      <button class="doc-tab" data-type="receipt" onclick="setDocType('receipt')">領収書</button>
       <button class="doc-tab active" data-type="both" onclick="setDocType('both')">納品書兼請求書</button>
     </div>
+    <button id="convert-btn" class="convert-btn" style="display:none;" onclick="convertQuotationToInvoice()">✓ 見積が確定したら → 請求書に変換</button>
   </div>
 
   <div class="section">
-    <div class="section-title">請求情報</div>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>請求情報</span>
+      <button class="save-myinfo-btn" onclick="autoNumber()">🔢 自動採番</button>
+    </div>
     <div class="row2" style="padding: 0 14px;">
       <div class="field"><label id="label-date">請求日</label><input type="date" id="inv-date"></div>
       <div class="field"><label id="label-no">請求書番号</label><input type="text" id="inv-no" placeholder="2024-001"></div>
     </div>
-    <div class="field" id="due-date-field"><label>お支払期限</label><input type="date" id="due-date"></div>
+    <div class="field" id="due-date-field"><label id="label-due">お支払期限</label><input type="date" id="due-date"></div>
+    <div class="field" id="receipt-desc-field" style="display:none;"><label>但し書き</label><input type="text" id="receipt-desc" placeholder="お品代として"></div>
     <div class="field"><label>件名</label><input type="text" id="subject" placeholder="例：システム開発費"></div>
   </div>
 
   <div class="section">
-    <div class="section-title">請求先（お客様）</div>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>請求先（お客様）</span>
+      <button class="save-myinfo-btn" onclick="saveClient()">💾 取引先を保存</button>
+    </div>
+    <div class="field" style="display:flex;gap:6px;align-items:center;">
+      <select id="client-select" onchange="applyClient(this.value)" style="flex:1;">
+        <option value="">－ 保存済みの取引先を選択 －</option>
+      </select>
+      <button class="save-myinfo-btn" onclick="deleteClient()" style="white-space:nowrap;">🗑 削除</button>
+    </div>
     <div class="field"><label>会社名・宛名</label><input type="text" id="to-company" placeholder="株式会社○○　御中"></div>
     <div class="field"><label>郵便番号</label><input type="text" id="to-zip" placeholder="000-0000"></div>
     <div class="field"><label>住所</label><input type="text" id="to-addr" placeholder="東京都○○区..."></div>
@@ -231,8 +261,57 @@
     </div>
   </div>
 
+  <div class="section" id="hanko-section">
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>印影（ハンコ）</span>
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:400;color:var(--text-secondary);">
+        <input type="checkbox" id="hanko-enabled" onchange="onHankoEnabledChange()"> 書類に表示する
+      </label>
+    </div>
+    <div class="mini-tab-row">
+      <button type="button" class="mini-tab" id="hanko-tab-text" onclick="setHankoType('text')">名前から作成</button>
+      <button type="button" class="mini-tab" id="hanko-tab-image" onclick="setHankoType('image')">画像をアップロード</button>
+    </div>
+    <div id="hanko-text-panel">
+      <div class="row3" style="padding:0 14px;">
+        <div class="field"><label>印面の文字</label><input type="text" id="hanko-text" maxlength="4" placeholder="山田" oninput="onHankoTextSettingChange()"></div>
+        <div class="field"><label>形</label>
+          <select id="hanko-shape" onchange="onHankoTextSettingChange()">
+            <option value="circle">丸印</option>
+            <option value="square">角印</option>
+          </select>
+        </div>
+        <div class="field"><label>色</label>
+          <select id="hanko-color" onchange="onHankoTextSettingChange()">
+            <option value="#c0392b">朱色</option>
+            <option value="#1a1a1a">黒</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="hanko-image-panel" style="display:none;padding:0 14px 4px;">
+      <div class="field" style="padding:0;"><label>ハンコの画像（背景透過PNGがきれいです）</label>
+        <input type="file" id="hanko-image-input" accept="image/*" onchange="onHankoImageSelected(event)">
+      </div>
+    </div>
+    <div style="padding:10px 14px 16px;display:flex;align-items:center;gap:12px;">
+      <div class="hanko-preview-box" id="hanko-preview"></div>
+      <button class="save-myinfo-btn" onclick="clearHanko()">🗑 ハンコを削除</button>
+    </div>
+  </div>
+
   <div class="section">
-    <div class="section-title">明細</div>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+      <span>明細</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <select id="round-mode" onchange="setRoundMode(this.value)" style="font-size:11px;padding:3px 6px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);color:var(--text-secondary);">
+          <option value="round">端数：四捨五入</option>
+          <option value="floor">端数：切り捨て</option>
+          <option value="ceil">端数：切り上げ</option>
+        </select>
+        <button class="save-myinfo-btn" onclick="manageCustomTaxRates()">⚙ 税率管理</button>
+      </div>
+    </div>
     <div class="item-header">
       <span>商品名／品名</span><span>数量</span><span>単位</span><span>単価</span><span>税率</span><span></span>
     </div>
@@ -352,19 +431,49 @@
   </div>
 </div>
 
+<div class="help-overlay" id="doclist-overlay" onclick="closeDocListIfBg(event)">
+  <div class="help-sheet">
+    <h2>📁 書類一覧</h2>
+    <p class="help-sub">保存した見積書・納品書・請求書を呼び出せます</p>
+    <button class="help-close-btn" style="margin-bottom:14px;background:#1a1a1a;color:white;" onclick="saveCurrentToList()">＋ 今の内容を一覧に保存</button>
+    <div id="doclist-items"></div>
+    <button class="help-close-btn" style="margin-top:16px;" onclick="closeDocList()">閉じる</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const UNIT_LIST = ['式','個','台','人','時間','本','枚','冊','回','件','セット','kg','g','m','cm','L','ml','月','日','年'];
-const TAX_RATES = [0.10, 0.08, 0.00];
-const TAX_LABELS = ['10%', '8%', '0%'];
+const BASE_TAX_RATES = [0.10, 0.08, 0.00];
+const CUSTOM_TAX_KEY = 'invoice_customtaxrates';
+
+function loadCustomTaxRates() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_TAX_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveCustomTaxRates(list) {
+  localStorage.setItem(CUSTOM_TAX_KEY, JSON.stringify(list));
+}
+// 標準の税率＋これまでに入力したカスタム税率をまとめた一覧（降順）
+function getTaxRateList() {
+  const custom = loadCustomTaxRates();
+  return [...BASE_TAX_RATES, ...custom.filter(r => !BASE_TAX_RATES.includes(r))].sort((a,b)=>b-a);
+}
+// 0.125 のような小数を "12.5%" のように表示する（浮動小数の誤差を丸めて補正）
+function taxRateLabel(rate) {
+  const pct = Math.round((rate || 0) * 10000) / 100;
+  return `${pct}%`;
+}
 let items = [{name:'',qty:1,unit:'式',price:0,tax:0.10,deliveryDate:''}];
 let docType = 'both'; // 'delivery' | 'invoice' | 'both'
 
 const DOC_LABELS = {
-  delivery: { title: '納品書', dateLabel: '納品日', noLabel: '納品書番号', showDue: false, showBank: false, printTitle: '納品書', leadText: '下記の通り納品いたします。' },
-  invoice:  { title: '請求書', dateLabel: '請求日', noLabel: '請求書番号', showDue: true,  showBank: true,  printTitle: '請求書', leadText: '下記の通りご請求申し上げます。' },
-  both:     { title: '納品書 兼 請求書', dateLabel: '請求日', noLabel: '請求書番号', showDue: true, showBank: true, printTitle: '納品書　兼　請求書', leadText: '下記の通りご請求申し上げます。' }
+  quotation: { title: '見積書', dateLabel: '見積日', noLabel: '見積書番号', showDue: true,  dueLabel: '有効期限', showBank: false, showReceiptDesc: false, printTitle: '見積書', leadText: '下記の通りお見積り申し上げます。', amountLabel: 'お見積金額', itemDateLabel: '希望納期' },
+  delivery:  { title: '納品書', dateLabel: '納品日', noLabel: '納品書番号', showDue: false, dueLabel: 'お支払期限', showBank: false, showReceiptDesc: false, printTitle: '納品書', leadText: '下記の通り納品いたします。', amountLabel: 'お届け金額', itemDateLabel: '納品日' },
+  invoice:   { title: '請求書', dateLabel: '請求日', noLabel: '請求書番号', showDue: true,  dueLabel: 'お支払期限', showBank: true,  showReceiptDesc: false, printTitle: '請求書', leadText: '下記の通りご請求申し上げます。', amountLabel: 'ご請求金額', itemDateLabel: '納品日' },
+  receipt:   { title: '領収書', dateLabel: '発行日', noLabel: '領収書番号', showDue: false, dueLabel: 'お支払期限', showBank: false, showReceiptDesc: true,  printTitle: '領収書', leadText: '', amountLabel: '領収金額', itemDateLabel: '日付' },
+  both:      { title: '納品書 兼 請求書', dateLabel: '請求日', noLabel: '請求書番号', showDue: true, dueLabel: 'お支払期限', showBank: true, showReceiptDesc: false, printTitle: '納品書　兼　請求書', leadText: '下記の通りご請求申し上げます。', amountLabel: 'ご請求金額', itemDateLabel: '納品日' }
 };
 
 function setDocType(type) {
@@ -376,9 +485,93 @@ function setDocType(type) {
   document.getElementById('app-title').textContent = cfg.title;
   document.getElementById('label-date').textContent = cfg.dateLabel;
   document.getElementById('label-no').textContent = cfg.noLabel;
+  document.getElementById('label-due').textContent = cfg.dueLabel;
   document.getElementById('due-date-field').style.display = cfg.showDue ? '' : 'none';
+  document.getElementById('receipt-desc-field').style.display = cfg.showReceiptDesc ? '' : 'none';
   document.getElementById('bank-section').style.display = cfg.showBank ? '' : 'none';
+  document.getElementById('convert-btn').style.display = (type === 'quotation') ? '' : 'none';
+  // 見積書に切り替えたとき、有効期限が未入力なら発行日+30日を自動で入れておく
+  if (type === 'quotation') {
+    const dueEl = document.getElementById('due-date');
+    if (dueEl && !dueEl.value) {
+      const d = new Date();
+      d.setDate(d.getDate() + 30);
+      dueEl.value = d.toISOString().slice(0, 10);
+    }
+  }
+  renderItems();
 }
+
+// ── 見積書 → 請求書への変換 ──────────────
+function convertQuotationToInvoice() {
+  if (docType !== 'quotation') return;
+  const oldNo = v('inv-no');
+  setDocType('invoice');
+  document.getElementById('inv-date').value = today();
+  document.getElementById('inv-no').value = '';
+  document.getElementById('due-date').value = '';
+  if (oldNo) {
+    const memoEl = document.getElementById('memo');
+    const note = `（見積書番号：${oldNo}）`;
+    if (!memoEl.value.includes(note)) {
+      memoEl.value = memoEl.value ? memoEl.value + '\n' + note : note;
+    }
+  }
+  scheduleAutosave();
+  showToast('請求書に変換しました。番号・日付をご確認ください');
+}
+
+// ── 書類番号の自動採番 ────────────────────
+function autoNumber() {
+  const key = 'invoice_seq_' + docType;
+  const n = (parseInt(localStorage.getItem(key) || '0', 10) || 0) + 1;
+  localStorage.setItem(key, String(n));
+  const y = new Date().getFullYear();
+  const prefixMap = { quotation: 'Q', delivery: 'D', invoice: 'I', both: 'INV' };
+  const numStr = `${prefixMap[docType] || 'NO'}-${y}-${String(n).padStart(3, '0')}`;
+  document.getElementById('inv-no').value = numStr;
+  scheduleAutosave();
+  showToast(`番号「${numStr}」を入力しました`);
+}
+
+// ── 端数処理方式 ──────────────────────────
+const ROUND_MODE_KEY = 'invoice_roundmode';
+let roundMode = localStorage.getItem(ROUND_MODE_KEY) || 'round';
+
+function applyRound(n) {
+  if (roundMode === 'floor') return Math.floor(n);
+  if (roundMode === 'ceil') return Math.ceil(n);
+  return Math.round(n);
+}
+
+function setRoundMode(mode) {
+  roundMode = mode;
+  localStorage.setItem(ROUND_MODE_KEY, mode);
+  calcTotals();
+  scheduleAutosave();
+  showToast('端数処理方式を変更しました');
+}
+
+// 印刷用HTML（印刷メニュー版・PDF直接保存版）で共通して使うCSS。
+// 見た目を直すときはここ1箇所を直せば両方に反映される。
+const PRINT_DOC_CSS = `
+  h1{font-size:18px;font-weight:700;text-align:center;margin-bottom:12px;letter-spacing:0.05em}
+  .inv-meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:11px}
+  .inv-meta div{line-height:1.8}
+  hr.inv-divider{border:none;border-top:1.5px solid #333;margin:8px 0}
+  hr.inv-thin{border:none;border-top:0.5px solid #aaa;margin:6px 0}
+  .inv-amount-box{border:1.5px solid #333;padding:6px 12px;margin:10px 0;display:flex;justify-content:space-between;align-items:center}
+  .inv-amount-box .amount{font-size:18px;font-weight:700}
+  .inv-table{width:100%;border-collapse:collapse;font-size:10.5px;margin:10px 0}
+  .inv-table th{background:#eee;border:0.5px solid #bbb;padding:4px 5px;text-align:center;font-weight:600}
+  .inv-table td{border:0.5px solid #bbb;padding:4px 5px}
+  .inv-table td.r{text-align:right}
+  .inv-table td.c{text-align:center}
+  .inv-table tr.empty td{color:#ccc}
+  .inv-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;font-size:11px}
+  .inv-bank td{padding:1px 8px 1px 0}
+  .inv-note{min-height:50px;border:0.5px solid #bbb;padding:6px;font-size:11px;white-space:pre-wrap}
+`;
 
 function today() { return new Date().toISOString().slice(0,10); }
 document.getElementById('inv-date').value = today();
@@ -435,7 +628,63 @@ function removeItem(i) {
   renderItems();
 }
 
+function ensureTaxRatesRegistered() {
+  const known = getTaxRateList();
+  const custom = loadCustomTaxRates();
+  let changed = false;
+  items.forEach(it => {
+    const r = it.tax;
+    if (typeof r === 'number' && !isNaN(r) && !known.includes(r) && !custom.includes(r)) {
+      custom.push(r);
+      changed = true;
+    }
+  });
+  if (changed) saveCustomTaxRates(custom);
+}
+
+function onTaxSelectChange(i, el) {
+  if (el.value !== '__custom__') {
+    items[i].tax = parseFloat(el.value);
+    calcTotals();
+    scheduleAutosave();
+    return;
+  }
+  const input = prompt('税率を%で入力してください（例：12.5）', '');
+  if (input === null || input.trim() === '') { renderItems(); return; }
+  const pct = parseFloat(input.replace('%','').trim());
+  if (isNaN(pct) || pct < 0 || pct > 100) {
+    showToast('0〜100の数値で入力してください');
+    renderItems();
+    return;
+  }
+  const rate = Math.round(pct * 100) / 10000;
+  items[i].tax = rate;
+  const custom = loadCustomTaxRates();
+  if (!BASE_TAX_RATES.includes(rate) && !custom.includes(rate)) {
+    custom.push(rate);
+    saveCustomTaxRates(custom);
+  }
+  renderItems();
+  scheduleAutosave();
+  showToast(`税率 ${taxRateLabel(rate)} を追加しました（以降の明細でも選べます）`);
+}
+
+function manageCustomTaxRates() {
+  const custom = loadCustomTaxRates();
+  if (!custom.length) { showToast('追加されたカスタム税率はありません'); return; }
+  const list = custom.map((r,i) => `${i+1}: ${taxRateLabel(r)}`).join('\n');
+  const input = prompt(`削除する税率の番号を入力してください（キャンセルで何もしません）\n${list}`, '');
+  if (input === null || input.trim() === '') return;
+  const idx = parseInt(input, 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= custom.length) { showToast('番号が正しくありません'); return; }
+  const removed = custom.splice(idx, 1)[0];
+  saveCustomTaxRates(custom);
+  renderItems();
+  showToast(`税率 ${taxRateLabel(removed)} を削除しました`);
+}
+
 function renderItems() {
+  ensureTaxRatesRegistered();
   const c = document.getElementById('items-container');
   c.innerHTML = '';
   items.forEach((item, i) => {
@@ -448,7 +697,7 @@ function renderItems() {
           <input type="text" placeholder="品名" value="${(item.name||'').replace(/"/g,'&quot;')}" oninput="items[${i}].name=this.value">
         </div>
         <div class="item-field" style="min-width:110px; margin-left:6px;">
-          <div class="item-card-label">納品日</div>
+          <div class="item-card-label">${DOC_LABELS[docType].itemDateLabel}</div>
           <input type="date" value="${item.deliveryDate||''}" oninput="items[${i}].deliveryDate=this.value">
         </div>
       </div>
@@ -471,8 +720,9 @@ function renderItems() {
         </div>
         <div class="item-field">
           <div class="item-card-label">税率</div>
-          <select onchange="items[${i}].tax=parseFloat(this.value);calcTotals()">
-            ${TAX_RATES.map((r,j)=>`<option value="${r}" ${item.tax===r?'selected':''}>${TAX_LABELS[j]}</option>`).join('')}
+          <select onchange="onTaxSelectChange(${i}, this)">
+            ${getTaxRateList().map(r=>`<option value="${r}" ${item.tax===r?'selected':''}>${taxRateLabel(r)}</option>`).join('')}
+            <option value="__custom__">＋税率を入力</option>
           </select>
         </div>
         <button class="del-btn" onclick="removeItem(${i})" aria-label="削除" style="margin-top:14px">×</button>
@@ -484,22 +734,31 @@ function renderItems() {
 }
 
 function calcTotals() {
-  let sub=0, tax10=0, tax10base=0, tax8=0, tax8base=0;
+  let sub = 0;
+  const groups = {}; // rate(小数) -> { base, tax }
   items.forEach(item => {
     const amt = (item.qty||0)*(item.price||0);
     sub += amt;
-    if(item.tax===0.10){tax10base+=amt; tax10+=Math.round(amt*0.10);}
-    else if(item.tax===0.08){tax8base+=amt; tax8+=Math.round(amt*0.08);}
+    const rate = item.tax || 0;
+    if (!groups[rate]) groups[rate] = { base: 0, tax: 0 };
+    groups[rate].base += amt;
+    if (rate > 0) groups[rate].tax += applyRound(amt * rate);
   });
-  const total = sub+tax10+tax8;
+  let taxTotal = 0;
+  Object.values(groups).forEach(g => taxTotal += g.tax);
+  const total = sub + taxTotal;
   const fmt = n => n.toLocaleString('ja-JP');
   let html = '';
-  if(tax10base>0) html+=`<div class="total-row"><span>10%対象　¥${fmt(tax10base)}</span><span>消費税　¥${fmt(tax10)}</span></div>`;
-  if(tax8base>0)  html+=`<div class="total-row"><span>8%対象　¥${fmt(tax8base)}</span><span>消費税　¥${fmt(tax8)}</span></div>`;
-  html+=`<div class="total-row"><span>小計（税抜）</span><span>¥${fmt(sub)}</span></div>`;
-  html+=`<div class="total-row grand"><span>合計（税込）</span><span>¥${fmt(total)}</span></div>`;
+  Object.keys(groups).sort((a,b)=>b-a).forEach(rateKey => {
+    const rate = parseFloat(rateKey);
+    const g = groups[rateKey];
+    if (rate <= 0 || g.base <= 0) return; // 0%・未使用の税率は内訳を表示しない
+    html += `<div class="total-row"><span>${taxRateLabel(rate)}対象　¥${fmt(g.base)}</span><span>消費税　¥${fmt(g.tax)}</span></div>`;
+  });
+  html += `<div class="total-row"><span>小計（税抜）</span><span>¥${fmt(sub)}</span></div>`;
+  html += `<div class="total-row grand"><span>合計（税込）</span><span>¥${fmt(total)}</span></div>`;
   document.getElementById('totals-display').innerHTML = html;
-  return {sub, tax10, tax10base, tax8, tax8base, total};
+  return { sub, total, groups };
 }
 
 // ── 自社情報 ──────────────────────────────
@@ -528,6 +787,296 @@ function loadMyInfo() {
     });
     return true;
   } catch { return false; }
+}
+
+// ── 印影（ハンコ） ─────────────────────────
+// 「名前から作成」は文字を1文字ずつ縦に並べた簡易的な印影をSVGで生成するもので、
+// 実際の印章の代わりにはならない簡易的な表示です。画像アップロードなら実際の
+// スキャン画像・PNGをそのまま使えます。
+const HANKO_KEY = 'invoice_hanko';
+const HANKO_DEFAULT = { enabled: false, type: 'text', text: '', shape: 'circle', color: '#c0392b', image: '' };
+
+function loadHanko() {
+  try {
+    const raw = localStorage.getItem(HANKO_KEY);
+    if (!raw) return { ...HANKO_DEFAULT };
+    return Object.assign({ ...HANKO_DEFAULT }, JSON.parse(raw));
+  } catch { return { ...HANKO_DEFAULT }; }
+}
+function saveHanko(h) { localStorage.setItem(HANKO_KEY, JSON.stringify(h)); }
+
+function escapeXml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 1〜4文字を縦に並べた印影をSVGで生成（html2canvasでの出力にも耐える単純な図形＋テキストのみで構成）
+function buildHankoSVG(text, shape, color, sizePx) {
+  const chars = Array.from((text||'').trim()).slice(0,4);
+  if (!chars.length) return '';
+  const n = chars.length;
+  const vb = 100;
+  const fontSize = n <= 2 ? 34 : (n === 3 ? 27 : 22);
+  const lineH = fontSize * 1.08;
+  const totalH = lineH * n;
+  const startY = vb/2 - totalH/2 + fontSize*0.78;
+  let textEls = '';
+  chars.forEach((ch,i) => {
+    const y = (startY + i*lineH).toFixed(1);
+    textEls += `<text x="${vb/2}" y="${y}" text-anchor="middle" font-size="${fontSize}" font-family="'Hiragino Mincho ProN','Yu Mincho',serif" fill="${color}">${escapeXml(ch)}</text>`;
+  });
+  const borderEls = shape === 'square'
+    ? `<rect x="6" y="6" width="88" height="88" rx="4" fill="none" stroke="${color}" stroke-width="4"/><rect x="14" y="14" width="72" height="72" rx="2" fill="none" stroke="${color}" stroke-width="1.2"/>`
+    : `<circle cx="50" cy="50" r="46" fill="none" stroke="${color}" stroke-width="4"/><circle cx="50" cy="50" r="38" fill="none" stroke="${color}" stroke-width="1.2"/>`;
+  return `<svg viewBox="0 0 ${vb} ${vb}" width="${sizePx}" height="${sizePx}" xmlns="http://www.w3.org/2000/svg">${borderEls}${textEls}</svg>`;
+}
+
+// 設定パネルのプレビュー・実際の書類の両方で使う共通ロジック
+function getHankoMarkup(hanko, sizePx) {
+  if (!hanko) return '';
+  if (hanko.type === 'image' && hanko.image) {
+    return `<img src="${hanko.image}" style="width:${sizePx}px;height:${sizePx}px;object-fit:contain;">`;
+  }
+  if (hanko.type === 'text' && hanko.text && hanko.text.trim()) {
+    return buildHankoSVG(hanko.text, hanko.shape, hanko.color, sizePx);
+  }
+  return '';
+}
+// 書類（プレビュー／PDF）に実際に差し込むとき用。「表示する」がオフなら空を返す
+function getHankoHtmlForDoc(sizePx) {
+  const hanko = loadHanko();
+  if (!hanko.enabled) return '';
+  return getHankoMarkup(hanko, sizePx);
+}
+
+function renderHankoPreview() {
+  const box = document.getElementById('hanko-preview');
+  const html = getHankoMarkup(loadHanko(), 64);
+  box.innerHTML = html || '<span style="font-size:11px;color:#999;">未設定</span>';
+}
+
+function setHankoTabsOnly(type) {
+  document.getElementById('hanko-tab-text').classList.toggle('active', type === 'text');
+  document.getElementById('hanko-tab-image').classList.toggle('active', type === 'image');
+  document.getElementById('hanko-text-panel').style.display = type === 'text' ? '' : 'none';
+  document.getElementById('hanko-image-panel').style.display = type === 'image' ? '' : 'none';
+}
+
+function setHankoType(type) {
+  const hanko = loadHanko();
+  hanko.type = type;
+  saveHanko(hanko);
+  setHankoTabsOnly(type);
+  renderHankoPreview();
+}
+
+function onHankoTextSettingChange() {
+  const hanko = loadHanko();
+  const wasEmpty = !hanko.image && !hanko.text;
+  hanko.type = 'text';
+  hanko.text = document.getElementById('hanko-text').value;
+  hanko.shape = document.getElementById('hanko-shape').value;
+  hanko.color = document.getElementById('hanko-color').value;
+  if (wasEmpty && hanko.text.trim()) hanko.enabled = true;
+  saveHanko(hanko);
+  document.getElementById('hanko-enabled').checked = hanko.enabled;
+  renderHankoPreview();
+}
+
+function onHankoImageSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('画像ファイルを選んでください'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 300;
+      let w = img.width, h = img.height;
+      if (w > maxSize || h > maxSize) {
+        const scale = maxSize / Math.max(w, h);
+        w = Math.round(w*scale); h = Math.round(h*scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const hanko = loadHanko();
+      const wasEmpty = !hanko.image && !hanko.text;
+      hanko.type = 'image';
+      hanko.image = canvas.toDataURL('image/png');
+      if (wasEmpty) hanko.enabled = true;
+      saveHanko(hanko);
+      document.getElementById('hanko-enabled').checked = hanko.enabled;
+      renderHankoPreview();
+      showToast('ハンコ画像を設定しました');
+    };
+    img.onerror = () => showToast('画像を読み込めませんでした');
+    img.src = reader.result;
+  };
+  reader.onerror = () => showToast('画像を読み込めませんでした');
+  reader.readAsDataURL(file);
+}
+
+function onHankoEnabledChange() {
+  const hanko = loadHanko();
+  hanko.enabled = document.getElementById('hanko-enabled').checked;
+  saveHanko(hanko);
+}
+
+function clearHanko() {
+  if (!confirm('登録したハンコを削除しますか？')) return;
+  saveHanko({ ...HANKO_DEFAULT });
+  document.getElementById('hanko-image-input').value = '';
+  applyHankoUiFromSettings();
+  showToast('ハンコを削除しました');
+}
+
+function applyHankoUiFromSettings() {
+  const hanko = loadHanko();
+  document.getElementById('hanko-enabled').checked = !!hanko.enabled;
+  document.getElementById('hanko-text').value = hanko.text || '';
+  document.getElementById('hanko-shape').value = hanko.shape || 'circle';
+  document.getElementById('hanko-color').value = hanko.color || '#c0392b';
+  setHankoTabsOnly(hanko.type || 'text');
+  renderHankoPreview();
+}
+
+// ── 取引先（請求先）の保存・呼び出し ──────────
+const CLIENTS_KEY = 'invoice_clients';
+
+function loadClients() {
+  try { return JSON.parse(localStorage.getItem(CLIENTS_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveClients(list) {
+  localStorage.setItem(CLIENTS_KEY, JSON.stringify(list));
+}
+
+function renderClientSelect(selectedId) {
+  const sel = document.getElementById('client-select');
+  if (!sel) return;
+  const list = loadClients();
+  sel.innerHTML = '<option value="">－ 保存済みの取引先を選択 －</option>' +
+    list.map(c => `<option value="${c.id}"${c.id===selectedId?' selected':''}>${(c.company||'（名称未設定）').replace(/</g,'&lt;')}</option>`).join('');
+}
+
+function saveClient() {
+  const company = v('to-company');
+  if (!company) { showToast('会社名を入力してください'); return; }
+  const list = loadClients();
+  const existing = list.find(c => c.company === company);
+  const data = { id: existing ? existing.id : Date.now().toString(), company, zip: v('to-zip'), addr: v('to-addr'), person: v('to-person') };
+  if (existing) Object.assign(existing, data);
+  else list.push(data);
+  saveClients(list);
+  renderClientSelect(data.id);
+  showToast(`「${company}」を取引先として保存しました`);
+}
+
+function applyClient(id) {
+  if (!id) return;
+  const c = loadClients().find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('to-company').value = c.company || '';
+  document.getElementById('to-zip').value = c.zip || '';
+  document.getElementById('to-addr').value = c.addr || '';
+  document.getElementById('to-person').value = c.person || '';
+  scheduleAutosave();
+}
+
+function deleteClient() {
+  const sel = document.getElementById('client-select');
+  const id = sel ? sel.value : '';
+  if (!id) { showToast('削除する取引先を選択してください'); return; }
+  if (!confirm('選択した取引先を一覧から削除しますか？')) return;
+  saveClients(loadClients().filter(c => c.id !== id));
+  renderClientSelect('');
+  showToast('取引先を削除しました');
+}
+
+// ── 複数書類の一覧管理 ────────────────────
+const DOCS_KEY = 'invoice_documents';
+
+function loadDocs() {
+  try { return JSON.parse(localStorage.getItem(DOCS_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveDocs(list) {
+  localStorage.setItem(DOCS_KEY, JSON.stringify(list));
+}
+
+function totalForItems(itemList) {
+  let sub = 0, tax = 0;
+  (itemList || []).forEach(item => {
+    const amt = (item.qty || 0) * (item.price || 0);
+    sub += amt;
+    const rate = item.tax || 0;
+    if (rate > 0) tax += applyRound(amt * rate);
+  });
+  return sub + tax;
+}
+
+function openDocList() {
+  renderDocList();
+  document.getElementById('doclist-overlay').classList.add('active');
+}
+
+function closeDocList() {
+  document.getElementById('doclist-overlay').classList.remove('active');
+}
+
+function closeDocListIfBg(e) {
+  if (e.target === document.getElementById('doclist-overlay')) closeDocList();
+}
+
+function renderDocList() {
+  const list = loadDocs().slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  const c = document.getElementById('doclist-items');
+  if (!list.length) {
+    c.innerHTML = '<div style="padding:20px 4px;text-align:center;color:#888;font-size:13px;">保存された書類はまだありません</div>';
+    return;
+  }
+  c.innerHTML = list.map(doc => {
+    const d = doc.data;
+    const cfg = DOC_LABELS[d.docType || 'both'];
+    const total = totalForItems(d.items);
+    const company = d.toCompany || '（宛先未入力）';
+    const sub = `${d.invNo || '番号なし'}　${d.invDate || ''}　¥${total.toLocaleString('ja-JP')}`;
+    return `<div class="doclist-item" onclick="openDoc('${doc.id}')">
+      <div class="doclist-main">
+        <div class="doclist-title">${cfg.title}　${company.replace(/</g,'&lt;')}</div>
+        <div class="doclist-sub">${sub}</div>
+      </div>
+      <button class="doclist-del" onclick="event.stopPropagation();deleteDoc('${doc.id}')" aria-label="削除">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function saveCurrentToList() {
+  const data = collectData();
+  const list = loadDocs();
+  const key = (data.docType || 'both') + '|' + (data.invNo || '');
+  let entry = data.invNo ? list.find(d => ((d.data.docType || 'both') + '|' + (d.data.invNo || '')) === key) : null;
+  if (entry) { entry.data = data; entry.updatedAt = Date.now(); }
+  else { list.push({ id: Date.now().toString(), updatedAt: Date.now(), data }); }
+  saveDocs(list);
+  renderDocList();
+  showToast('書類一覧に保存しました');
+}
+
+function openDoc(id) {
+  const doc = loadDocs().find(d => d.id === id);
+  if (!doc) return;
+  applyData(doc.data);
+  closeDocList();
+  showToast('書類を読み込みました');
+}
+
+function deleteDoc(id) {
+  if (!confirm('この書類を一覧から削除しますか？')) return;
+  saveDocs(loadDocs().filter(d => d.id !== id));
+  renderDocList();
 }
 
 // ── オートセーブ ──────────────────────────
@@ -595,7 +1144,7 @@ function switchHelpTab(name, btn) {
 function collectData() {
   return {
     docType: docType,
-    invDate:v('inv-date'), invNo:v('inv-no'), dueDate:v('due-date'), subject:v('subject'),
+    invDate:v('inv-date'), invNo:v('inv-no'), dueDate:v('due-date'), subject:v('subject'), receiptDesc:v('receipt-desc'),
     toCompany:v('to-company'), toZip:v('to-zip'), toAddr:v('to-addr'), toPerson:v('to-person'),
     fromCompany:v('from-company'), fromRegno:v('from-regno'), fromZip:v('from-zip'), fromAddr:v('from-addr'),
     fromTel:v('from-tel'), fromFax:v('from-fax'), fromMail:v('from-mail'),
@@ -608,7 +1157,7 @@ function collectData() {
 function applyData(d) {
   const set = (id,val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
   setDocType(d.docType || 'both');
-  set('inv-date',d.invDate); set('inv-no',d.invNo); set('due-date',d.dueDate); set('subject',d.subject);
+  set('inv-date',d.invDate); set('inv-no',d.invNo); set('due-date',d.dueDate); set('subject',d.subject); set('receipt-desc',d.receiptDesc);
   set('to-company',d.toCompany); set('to-zip',d.toZip); set('to-addr',d.toAddr); set('to-person',d.toPerson);
   set('from-company',d.fromCompany); set('from-regno',d.fromRegno); set('from-zip',d.fromZip); set('from-addr',d.fromAddr);
   set('from-tel',d.fromTel); set('from-fax',d.fromFax); set('from-mail',d.fromMail);
@@ -621,7 +1170,8 @@ function applyData(d) {
 function saveFile() {
   const data = collectData();
   const invNo = data.invNo ? data.invNo.replace(/[\/\\:*?"<>|]/g,'_') : '';
-  const filename = `invoice_${data.invDate||today()}${invNo?'_'+invNo:''}.json`;
+  const prefix = DOC_LABELS[data.docType || 'both'].printTitle.replace(/[\s　]/g,'');
+  const filename = `${prefix}_${data.invDate||today()}${invNo?'_'+invNo:''}.json`;
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -666,15 +1216,14 @@ function showPreview() {
         const [,m,d] = item.deliveryDate.split('-');
         dateStr = `${parseInt(m)}/${parseInt(d)}`;
       }
-      rows+=`<tr><td class="c">${i+1}</td><td class="c">${dateStr}</td><td>${item.name}</td><td class="r">${item.qty}　${item.unit||''}</td><td class="r">${fmt(item.price)}</td><td class="c">${item.tax===0?'0%':item.tax===0.08?'8%':'10%'}</td><td class="r">${fmt(amt)}</td></tr>`;
+      rows+=`<tr><td class="c">${i+1}</td><td class="c">${dateStr}</td><td>${item.name}</td><td class="r">${item.qty}　${item.unit||''}</td><td class="r">${fmt(item.price)}</td><td class="c">${taxRateLabel(item.tax)}</td><td class="r">${fmt(amt)}</td></tr>`;
     } else {
       rows+=`<tr class="empty"><td class="c">${i+1}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
     }
   }
 
-  const amountLabel = docType === 'delivery' ? 'お届け金額' : 'ご請求金額';
-  const amountBoxHtml = `<div class="inv-amount-box"><span>${amountLabel}</span><span class="amount">¥${fmt(t.total)}</span></div>`;
-  const dueDateHtml = cfg.showDue ? `<div style="font-size:11px;margin-bottom:4px">お支払期限：${fmtDate(v('due-date'))}</div>` : '';
+  const amountBoxHtml = `<div class="inv-amount-box"><span>${cfg.amountLabel}</span><span class="amount">¥${fmt(t.total)}</span></div>`;
+  const dueDateHtml = cfg.showDue ? `<div style="font-size:11px;margin-bottom:4px">${cfg.dueLabel}：${fmtDate(v('due-date'))}</div>` : '';
 
   const bankBlockHtml = cfg.showBank ? `
       <div>
@@ -686,7 +1235,15 @@ function showPreview() {
           <tr><td>口座番号</td><td>${v('bank-no')}</td></tr>
           <tr><td>口座名義</td><td>${v('bank-holder')}</td></tr>
         </table>
-      </div>` : `<div></div>`;
+      </div>` : (docType === 'receipt' ? `
+      <div style="text-align:right">
+        <div style="font-weight:600;margin-bottom:6px">領収印</div>
+        ${getHankoHtmlForDoc(52) || `<span style="display:inline-block;width:52px;height:52px;border:1px solid #999;border-radius:4px;"></span>`}
+      </div>` : `<div></div>`);
+
+  const stampDutyNoteHtml = (docType === 'receipt' && t.total >= 50000)
+    ? `<div style="font-size:10px;color:#888;margin-top:6px">※紙で発行する場合、5万円以上の領収書には収入印紙（200円〜）の貼付が必要です</div>`
+    : '';
 
   document.getElementById('preview-content').innerHTML = `
     <h1>${cfg.printTitle}</h1>
@@ -702,7 +1259,10 @@ function showPreview() {
         <div>${cfg.dateLabel}　${fmtDate(v('inv-date'))}</div>
         <div>番号　${v('inv-no')||'　'}</div>
         <hr class="inv-thin">
-        <div style="font-weight:600">${v('from-company')}</div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
+          <div style="font-weight:600">${v('from-company')}</div>
+          ${docType !== 'receipt' ? getHankoHtmlForDoc(38) : ''}
+        </div>
         <div>${v('from-regno')?'登録番号 '+v('from-regno'):''}</div>
         <div>${v('from-zip')?'〒'+v('from-zip'):''}</div>
         <div>${v('from-addr')}</div>
@@ -712,18 +1272,24 @@ function showPreview() {
       </div>
     </div>
     <hr class="inv-divider">
-    <div>${cfg.leadText}</div>
+    ${docType === 'receipt' ? '' : `<div>${cfg.leadText}</div>`}
     ${amountBoxHtml}
+    ${docType === 'receipt'
+      ? `<div style="font-size:12px;line-height:1.8;margin-top:4px">但し、${(v('receipt-desc')||'お品代')}として<br>上記正に領収いたしました。</div>`
+      : ''}
     ${dueDateHtml}
     <table class="inv-table">
-      <thead><tr><th style="width:22px">NO</th><th style="width:34px">納品日</th><th>商品名／品名</th><th style="width:50px">数量</th><th style="width:54px">単価</th><th style="width:28px">税率</th><th style="width:58px">金額(税抜)</th></tr></thead>
+      <thead><tr><th style="width:22px">NO</th><th style="width:34px">${cfg.itemDateLabel}</th><th>商品名／品名</th><th style="width:50px">数量</th><th style="width:54px">単価</th><th style="width:28px">税率</th><th style="width:58px">金額(税抜)</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="text-align:right;font-size:11px">
-      ${t.tax10base>0?`<span style="margin-right:12px">10%対象 ¥${fmt(t.tax10base)}　消費税 ¥${fmt(t.tax10)}</span>`:''}
-      ${t.tax8base>0?`<span style="margin-right:12px">8%対象 ¥${fmt(t.tax8base)}　消費税 ¥${fmt(t.tax8)}</span>`:''}
+      ${Object.keys(t.groups).sort((a,b)=>b-a).filter(r=>parseFloat(r)>0 && t.groups[r].base>0).map(rateKey=>{
+        const rate = parseFloat(rateKey); const g = t.groups[rateKey];
+        return `<span style="margin-right:12px">${taxRateLabel(rate)}対象 ¥${fmt(g.base)}　消費税 ¥${fmt(g.tax)}</span>`;
+      }).join('')}
       <br>小計（税抜）¥${fmt(t.sub)}　合計（税込）<strong>¥${fmt(t.total)}</strong>
     </div>
+    ${stampDutyNoteHtml}
     <hr class="inv-thin" style="margin-top:6px">
     <div class="inv-footer">
       <div><div style="font-weight:600;margin-bottom:4px">備　考</div><div class="inv-note">${v('memo')}</div></div>
@@ -740,27 +1306,12 @@ function printPDF(){
   const content = document.getElementById('preview-content').innerHTML;
   const w = window.open('','_blank');
   if(!w){ alert('ポップアップを許可してください'); return; }
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>納品書兼請求書</title><style>
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${DOC_LABELS[docType].printTitle}</title><style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;font-size:12px;color:#333;background:white;padding:20px 24px}
-    @page{size:A4;margin:15mm}
+    @page{size:A4 portrait;margin:15mm}
     @media print{body{padding:0}}
-    h1{font-size:18px;font-weight:700;text-align:center;margin-bottom:12px;letter-spacing:0.05em}
-    .inv-meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:11px}
-    .inv-meta div{line-height:1.8}
-    hr.inv-divider{border:none;border-top:1.5px solid #333;margin:8px 0}
-    hr.inv-thin{border:none;border-top:0.5px solid #aaa;margin:6px 0}
-    .inv-amount-box{border:1.5px solid #333;padding:6px 12px;margin:10px 0;display:flex;justify-content:space-between;align-items:center}
-    .inv-amount-box .amount{font-size:18px;font-weight:700}
-    .inv-table{width:100%;border-collapse:collapse;font-size:10.5px;margin:10px 0}
-    .inv-table th{background:#eee;border:0.5px solid #bbb;padding:4px 5px;text-align:center;font-weight:600}
-    .inv-table td{border:0.5px solid #bbb;padding:4px 5px}
-    .inv-table td.r{text-align:right}
-    .inv-table td.c{text-align:center}
-    .inv-table tr.empty td{color:#ccc}
-    .inv-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;font-size:11px}
-    .inv-bank td{padding:1px 8px 1px 0}
-    .inv-note{min-height:50px;border:0.5px solid #bbb;padding:6px;font-size:11px;white-space:pre-wrap}
+    ${PRINT_DOC_CSS}
   </style></head><body>${content}</body></html>`);
   w.document.close();
   setTimeout(()=>{ w.focus(); w.print(); }, 300);
@@ -787,26 +1338,7 @@ async function saveJsPDF() {
       body{font-family:'Hiragino Kaku Gothic Pro','Meiryo','Yu Gothic',sans-serif;
            font-size:12px;color:#333;background:white;
            width:${A4_W}px;padding:20px 28px;}
-      h1{font-size:18px;font-weight:700;text-align:center;margin-bottom:12px;letter-spacing:0.05em}
-      .inv-meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:11px}
-      .inv-meta div{line-height:1.8}
-      hr.inv-divider{border:none;border-top:1.5px solid #333;margin:8px 0}
-      hr.inv-thin{border:none;border-top:0.5px solid #aaa;margin:6px 0}
-      .inv-amount-box{border:1.5px solid #333;padding:6px 12px;margin:10px 0;
-                      display:flex;justify-content:space-between;align-items:center}
-      .inv-amount-box .amount{font-size:18px;font-weight:700}
-      .inv-table{width:100%;border-collapse:collapse;font-size:10.5px;margin:10px 0}
-      .inv-table th{background:#eee;border:0.5px solid #bbb;padding:4px 5px;
-                    text-align:center;font-weight:600}
-      .inv-table td{border:0.5px solid #bbb;padding:4px 5px}
-      .inv-table td.r{text-align:right}
-      .inv-table td.c{text-align:center}
-      .inv-table tr.empty td{color:#ccc}
-      .inv-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;
-                  margin-top:12px;font-size:11px}
-      .inv-bank td{padding:1px 8px 1px 0}
-      .inv-note{min-height:50px;border:0.5px solid #bbb;padding:6px;
-                font-size:11px;white-space:pre-wrap}
+      ${PRINT_DOC_CSS}
     `;
 
     // iframe生成（画面外に配置）
@@ -898,6 +1430,7 @@ function clearForm(){
     el.value = el.id==='inv-date' ? today() : '';
   });
   document.getElementById('bank-type').value = '普通';
+  document.getElementById('client-select').value = '';
   items = [{name:'',qty:1,unit:'式',price:0,tax:0.10,deliveryDate:''}];
   renderItems();
   localStorage.removeItem(AUTOSAVE_KEY);
@@ -932,6 +1465,9 @@ if ('serviceWorker' in navigator) {
 // 起動時：オートセーブ復元 → なければ自社情報だけ読み込む
 renderItems();
 setDocType('both');
+document.getElementById('round-mode').value = roundMode;
+renderClientSelect('');
+applyHankoUiFromSettings();
 if (!loadAutosave()) {
   loadMyInfo();
 }
