@@ -527,7 +527,7 @@ function autoNumber() {
   const n = (parseInt(localStorage.getItem(key) || '0', 10) || 0) + 1;
   localStorage.setItem(key, String(n));
   const y = new Date().getFullYear();
-  const prefixMap = { quotation: 'Q', delivery: 'D', invoice: 'I', both: 'INV' };
+  const prefixMap = { quotation: 'Q', delivery: 'D', invoice: 'I', receipt: 'R', both: 'INV' };
   const numStr = `${prefixMap[docType] || 'NO'}-${y}-${String(n).padStart(3, '0')}`;
   document.getElementById('inv-no').value = numStr;
   scheduleAutosave();
@@ -735,17 +735,23 @@ function renderItems() {
 
 function calcTotals() {
   let sub = 0;
-  const groups = {}; // rate(小数) -> { base, tax }
+  const groups = {}; // rate(小数) -> { base }
   items.forEach(item => {
     const amt = (item.qty||0)*(item.price||0);
     sub += amt;
     const rate = item.tax || 0;
-    if (!groups[rate]) groups[rate] = { base: 0, tax: 0 };
+    if (!groups[rate]) groups[rate] = { base: 0 };
     groups[rate].base += amt;
-    if (rate > 0) groups[rate].tax += applyRound(amt * rate);
   });
+  // インボイス制度のルールに合わせ、税率ごとに「合計してから1回だけ」端数処理する
+  // （明細行1行ずつ丸めて合計すると、本来の税額と数円ずれることがあるため）
   let taxTotal = 0;
-  Object.values(groups).forEach(g => taxTotal += g.tax);
+  Object.keys(groups).forEach(rateKey => {
+    const rate = parseFloat(rateKey);
+    const g = groups[rateKey];
+    g.tax = rate > 0 ? applyRound(g.base * rate) : 0;
+    taxTotal += g.tax;
+  });
   const total = sub + taxTotal;
   const fmt = n => n.toLocaleString('ja-JP');
   let html = '';
@@ -803,7 +809,10 @@ function loadHanko() {
     return Object.assign({ ...HANKO_DEFAULT }, JSON.parse(raw));
   } catch { return { ...HANKO_DEFAULT }; }
 }
-function saveHanko(h) { localStorage.setItem(HANKO_KEY, JSON.stringify(h)); }
+function saveHanko(h) {
+  try { localStorage.setItem(HANKO_KEY, JSON.stringify(h)); }
+  catch { showToast('保存に失敗しました（容量不足の可能性があります）'); }
+}
 
 function escapeXml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1007,12 +1016,18 @@ function saveDocs(list) {
 }
 
 function totalForItems(itemList) {
-  let sub = 0, tax = 0;
+  let sub = 0;
+  const groups = {};
   (itemList || []).forEach(item => {
     const amt = (item.qty || 0) * (item.price || 0);
     sub += amt;
     const rate = item.tax || 0;
-    if (rate > 0) tax += applyRound(amt * rate);
+    groups[rate] = (groups[rate] || 0) + amt;
+  });
+  let tax = 0;
+  Object.keys(groups).forEach(rateKey => {
+    const rate = parseFloat(rateKey);
+    if (rate > 0) tax += applyRound(groups[rateKey] * rate);
   });
   return sub + tax;
 }
@@ -1436,6 +1451,7 @@ function clearForm(){
   localStorage.removeItem(AUTOSAVE_KEY);
   document.getElementById('autosave-bar').textContent = '　';
   loadMyInfo(); // リセット後も自社情報は復元
+  applyHankoUiFromSettings(); // リセット後も印影設定は復元
 }
 
 // Service Worker 登録・自動更新
